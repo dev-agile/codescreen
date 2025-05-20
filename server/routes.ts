@@ -72,7 +72,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         secure: process.env.NODE_ENV === "production",
         maxAge: 24 * 60 * 60 * 1000,
         sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-        // domain: ".yourdomain.com", // Uncomment and set if using a custom domain
+        domain: allowedOrigin // Uncomment and set if using a custom domain
       },
       store: new SessionStore({
         checkPeriod: 86400000,
@@ -216,8 +216,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/dashboard/recent-activity", isAuthenticated, async (req, res) => {
-    console.log(process.env.NODE_ENV,'process.env.FRONTEND_URL',process.env.FRONTEND_URL)
-
     const user = req.user as any;
     const activities = await storage.getRecentActivity(user.id);
     res.json(activities);
