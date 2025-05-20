@@ -17,9 +17,11 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { sendTestInvitation } from "./email-service";
 import type { Candidate } from "@shared/schema";
+import cors from 'cors';
 
 // Create session store
 const SessionStore = MemoryStore(session);
+const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:3000';
 
 // Extracted function for candidate test submission
 export async function submitCandidateTest(candidate: Candidate, autoSubmitted = false) {
@@ -55,19 +57,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register upload routes
   registerUploadRoutes(app);
   // Configure session middleware
+  app.use(cors({
+    origin: allowedOrigin,
+    credentials: true
+  }));
+  
   app.use(
     session({
       secret: process.env.SESSION_SECRET || "your-secret-key",
       resave: false,
       saveUninitialized: false,
-      cookie: { secure: process.env.NODE_ENV === "production", maxAge: 24 * 60 * 60 * 1000 }, // 24 hours
+      cookie: { secure: process.env.NODE_ENV === "production",
+        maxAge: 24 * 60 * 60 * 1000 ,
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      }, // 24 hours
       store: new SessionStore({
         checkPeriod: 86400000, // prune expired entries every 24h
       }),
     })
   );
 
-  // Initialize passport
   app.use(passport.initialize());
   app.use(passport.session());
 
