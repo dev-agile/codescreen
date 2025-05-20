@@ -55,24 +55,28 @@ export async function submitCandidateTest(candidate: Candidate, autoSubmitted = 
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Register upload routes
-  registerUploadRoutes(app);
-  // Configure session middleware
+  const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:3000';
+
   app.use(cors({
     origin: allowedOrigin,
     credentials: true
   }));
+  console.log(process.env.NODE_ENV,'process.env.FRONTEND_URL',process.env.FRONTEND_URL),
+
   
   app.use(
     session({
       secret: process.env.SESSION_SECRET || "your-secret-key",
       resave: false,
       saveUninitialized: false,
-      cookie: { secure: process.env.NODE_ENV === "production",
-        maxAge: 24 * 60 * 60 * 1000 ,
+      cookie: { 
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 24 * 60 * 60 * 1000,
         sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      }, // 24 hours
+        // domain: ".yourdomain.com", // Uncomment and set if using a custom domain
+      },
       store: new SessionStore({
-        checkPeriod: 86400000, // prune expired entries every 24h
+        checkPeriod: 86400000,
       }),
     })
   );
