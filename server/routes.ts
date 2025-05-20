@@ -72,7 +72,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         secure: process.env.NODE_ENV === "production",
         maxAge: 24 * 60 * 60 * 1000,
         sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-        domain: allowedOrigin // Uncomment and set if using a custom domain
+        domain: "codescreen.onrender.com" // Uncomment and set if using a custom domain
       },
       store: new SessionStore({
         checkPeriod: 86400000,
