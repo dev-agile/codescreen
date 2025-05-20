@@ -61,7 +61,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     origin: allowedOrigin,
     credentials: true
   }));
-  console.log(process.env.NODE_ENV,'process.env.FRONTEND_URL',process.env.FRONTEND_URL),
 
   
   app.use(
@@ -217,6 +216,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/dashboard/recent-activity", isAuthenticated, async (req, res) => {
+    console.log(process.env.NODE_ENV,'process.env.FRONTEND_URL',process.env.FRONTEND_URL)
+
     const user = req.user as any;
     const activities = await storage.getRecentActivity(user.id);
     res.json(activities);
