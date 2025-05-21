@@ -67,12 +67,14 @@ export async function submitCandidateTest(candidate: Candidate, autoSubmitted = 
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Register upload routes
+
   const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:3000';
 
   app.use(cors({
     origin: allowedOrigin,
     credentials: true
   }));
+  registerUploadRoutes(app);
 
   // Auth routes
   app.post("/api/auth/login", async (req, res) => {

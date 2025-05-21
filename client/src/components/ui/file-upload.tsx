@@ -1,6 +1,7 @@
 import React, { useState, useRef, ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Upload, Image as ImageIcon, X } from "lucide-react";
+import ImageKit from "imagekit-javascript";
 
 interface FileUploadProps {
   onUploadComplete: (imageUrl: string) => void;
@@ -17,7 +18,15 @@ export function FileUpload({
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentImageUrl || null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  console.log(import.meta.env.VITE_IMAGEKIT_PUBLIC_KEY,import.meta.env.VITE_IMAGEKIT_URL_ENDPOINT,'ssssssssssssss');
   
+  // Initialize ImageKit
+  const imagekit = new ImageKit({
+    publicKey: import.meta.env.VITE_IMAGEKIT_PUBLIC_KEY,
+    urlEndpoint: import.meta.env.VITE_IMAGEKIT_URL_ENDPOINT,
+  });
+  
+
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -42,27 +51,26 @@ export function FileUpload({
       const localPreviewUrl = URL.createObjectURL(file);
       setPreviewUrl(localPreviewUrl);
       
-      // Create FormData
-      const formData = new FormData();
-      formData.append('image', file);
+      // Fetch signature, token, expire from backend
+      const res = await fetch("/api/imagekit-auth");
+      if (!res.ok) throw new Error("Failed to get ImageKit auth");
+      const { signature, token, expire } = await res.json();
       
-      // Upload the file
-      const response = await fetch('/api/upload/image', {
-        method: 'POST',
-        body: formData,
+      // Upload to ImageKit
+      const result = await imagekit.upload({
+        file,
+        fileName: file.name,
+        tags: ["question-image"],
+        signature,
+        token,
+        expire
       });
       
-      if (!response.ok) {
-        throw new Error('Failed to upload image');
-      }
-      
-      const data = await response.json();
-      
       // Call the callback with the uploaded image URL
-      onUploadComplete(data.imageUrl);
+      onUploadComplete(result.url);
     } catch (err) {
       setError('Error uploading image. Please try again.');
-      console.error('Upload error:', err);
+      setPreviewUrl(null);
     } finally {
       setIsUploading(false);
     }
