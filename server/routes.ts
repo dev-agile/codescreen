@@ -646,7 +646,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Add this route with the other candidate routes
-  app.delete("/api/candidates/:id", async (req, res) => {
+  app.delete("/api/candidates/:id", verifyJwt, async (req, res) => {
     const candidateId = parseInt(req.params.id);
     if (isNaN(candidateId)) {
       return res.status(400).json({ error: "Invalid candidate ID" });
@@ -667,6 +667,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Check if user has permission to delete candidates for this test
       const user = await storage.getUser(req.user.id);
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+      
       if (test.createdBy !== user.id) {
         return res.status(403).json({ error: "Not authorized to delete candidates for this test" });
       }
