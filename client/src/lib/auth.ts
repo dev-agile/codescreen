@@ -26,16 +26,17 @@ export function useAuth() {
     queryKey: ["/api/auth/me"],
     retry: false,
     staleTime: 1000 * 60 * 5, // 5 minutes
-    onError: () => {
-      queryClient.setQueryData(["/api/auth/me"], null);
-    },
   });
 
   // Login mutation
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginCredentials) => {
       const res = await apiRequest("POST", "/api/auth/login", credentials);
-      return res.json();
+      const data = await res.json();
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+      }
+      return data;
     },
     onSuccess: (data) => {
       queryClient.setQueryData(["/api/auth/me"], data);
@@ -58,7 +59,11 @@ export function useAuth() {
   const signupMutation = useMutation({
     mutationFn: async (userData: any) => {
       const res = await apiRequest("POST", "/api/auth/signup", userData);
-      return res.json();
+      const data = await res.json();
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+      }
+      return data;
     },
     onSuccess: (data) => {
       queryClient.setQueryData(["/api/auth/me"], data);
@@ -81,6 +86,7 @@ export function useAuth() {
   const logoutMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/auth/logout", {});
+      localStorage.removeItem("token");
       return res.json();
     },
     onSuccess: () => {

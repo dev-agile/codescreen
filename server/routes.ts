@@ -11,17 +11,29 @@ import {
   loginSchema
 } from "@shared/schema";
 import { nanoid } from "nanoid";
-import session from "express-session";
-import MemoryStore from "memorystore";
-import passport from "passport";
-import { Strategy as LocalStrategy } from "passport-local";
-import { sendTestInvitation } from "./email-service";
-import type { Candidate } from "@shared/schema";
+import jwt from "jsonwebtoken";
 import cors from 'cors';
+import { sendTestInvitation } from "./email-service";
 
-// Create session store
-const SessionStore = MemoryStore(session);
-const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:3000';
+const JWT_SECRET = process.env.JWT_SECRET || "your-jwt-secret";
+
+function signJwt(user) {
+  return jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: "7d" });
+}
+
+function verifyJwt(req, res, next) {
+  const auth = req.headers.authorization;
+  if (!auth || !auth.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  try {
+    const payload = jwt.verify(auth.split(" ")[1], JWT_SECRET);
+    req.user = payload;
+    next();
+  } catch {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+}
 
 // Extracted function for candidate test submission
 export async function submitCandidateTest(candidate: Candidate, autoSubmitted = false) {
@@ -62,93 +74,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     credentials: true
   }));
 
-  
-  app.use(
-    session({
-      secret: process.env.SESSION_SECRET || "your-secret-key",
-      resave: false,
-      saveUninitialized: false,
-      cookie: { 
-        secure: process.env.NODE_ENV === "production",
-        maxAge: 24 * 60 * 60 * 1000,
-        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-      },
-      store: new SessionStore({
-        checkPeriod: 86400000,
-      }),
-    })
-  );
-
-  app.use(passport.initialize());
-  app.use(passport.session());
-
-  // Configure passport local strategy
-  passport.use(
-    new LocalStrategy(async (username, password, done) => {
-      try {
-        const user = await storage.getUserByUsername(username);
-        if (!user) {
-          return done(null, false, { message: "Incorrect username." });
-        }
-        if (user.password !== password) {
-          // In a real app, you'd use proper password hashing here
-          return done(null, false, { message: "Incorrect password." });
-        }
-        return done(null, user);
-      } catch (err) {
-        return done(err);
-      }
-    })
-  );
-
-  // Serialize and deserialize user for sessions
-  passport.serializeUser((user: any, done) => {
-    done(null, user.id);
-  });
-
-  passport.deserializeUser(async (id: number, done) => {
-    try {
-      const user = await storage.getUser(id);
-      done(null, user);
-    } catch (err) {
-      done(err);
-    }
-  });
-
-  // Authentication middleware
-  const isAuthenticated = (req: Request, res: Response, next: Function) => {
-    if (req.isAuthenticated()) {
-      return next();
-    }
-    res.status(401).json({ message: "Unauthorized" });
-  };
-
   // Auth routes
-  app.post("/api/auth/login", (req, res, next) => {
+  app.post("/api/auth/login", async (req, res) => {
     try {
       const parsed = loginSchema.parse(req.body);
-      
-      passport.authenticate("local", (err: any, user: any, info: any) => {
-        if (err) {
-          return next(err);
-        }
-        if (!user) {
-          return res.status(401).json({ message: info.message || "Authentication failed" });
-        }
-        req.logIn(user, (err) => {
-          if (err) {
-            return next(err);
-          }
-          return res.json({
-            id: user.id,
-            username: user.username,
-            email: user.email,
-            name: user.name,
-            company: user.company
-          });
-        });
-      })(req, res, next);
-    } catch (error: any) {
+      const user = await storage.getUserByUsername(parsed.username);
+      if (!user || user.password !== parsed.password) {
+        return res.status(401).json({ message: "Incorrect username or password" });
+      }
+      const token = signJwt(user);
+      res.json({
+        token,
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        name: user.name,
+        company: user.company
+      });
+    } catch (error) {
       res.status(400).json({ message: error.message });
     }
   });
@@ -156,48 +99,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/signup", async (req, res) => {
     try {
       const userData = insertUserSchema.parse(req.body);
-      
-      // Check if username already exists
       const existingUser = await storage.getUserByUsername(userData.username);
       if (existingUser) {
         return res.status(400).json({ message: "Username already exists" });
       }
-      
-      // Check if email already exists
       const existingEmail = await storage.getUserByEmail(userData.email);
       if (existingEmail) {
         return res.status(400).json({ message: "Email already exists" });
       }
-      
       const user = await storage.createUser(userData);
-      
-      // Log the user in
-      req.logIn(user, (err) => {
-        if (err) {
-          return res.status(500).json({ message: "Error logging in after registration" });
-        }
-        
-        res.status(201).json({
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          name: user.name,
-          company: user.company
-        });
+      const token = signJwt(user);
+      res.status(201).json({
+        token,
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        name: user.name,
+        company: user.company
       });
-    } catch (error: any) {
+    } catch (error) {
       res.status(400).json({ message: error.message });
     }
   });
 
   app.post("/api/auth/logout", (req, res) => {
-    req.logout(() => {
-      res.json({ message: "Logged out successfully" });
-    });
+    // JWT logout is handled client-side by deleting the token
+    res.json({ message: "Logged out successfully" });
   });
 
-  app.get("/api/auth/me", isAuthenticated, (req, res) => {
-    const user = req.user as any;
+  app.get("/api/auth/me", verifyJwt, async (req, res) => {
+    const user = await storage.getUser(req.user.id);
+    if (!user) return res.status(401).json({ message: "Unauthorized" });
     res.json({
       id: user.id,
       username: user.username,
@@ -208,61 +140,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Dashboard routes
-  app.get("/api/dashboard/stats", isAuthenticated, async (req, res) => {
-    const user = req.user as any;
+  app.get("/api/dashboard/stats", verifyJwt, async (req, res) => {
+    const user = await storage.getUser(req.user.id);
     const stats = await storage.getDashboardStats(user.id);
     res.json(stats);
   });
 
-  app.get("/api/dashboard/recent-activity", isAuthenticated, async (req, res) => {
-    const user = req.user as any;
+  app.get("/api/dashboard/recent-activity", verifyJwt, async (req, res) => {
+    const user = await storage.getUser(req.user.id);
     const activities = await storage.getRecentActivity(user.id);
     res.json(activities);
   });
 
   // Test routes
-  app.get("/api/tests", isAuthenticated, async (req, res) => {
-    const user = req.user as any;
+  app.get("/api/tests", verifyJwt, async (req, res) => {
+    const user = await storage.getUser(req.user.id);
     const tests = await storage.getTestsByUser(user.id);
-    
-    // Get stats for each test
     const testsWithStats = await Promise.all(tests.map(async (test) => {
       const stats = await storage.getTestStats(test.id);
-      return {
-        ...test,
-        stats
-      };
+      return { ...test, stats };
     }));
-    
     res.json(testsWithStats);
   });
 
-  app.get("/api/tests/:id", isAuthenticated, async (req, res) => {
+  app.get("/api/tests/:id", verifyJwt, async (req, res) => {
     const testId = parseInt(req.params.id);
     const test = await storage.getTest(testId);
-    
-    if (!test) {
-      return res.status(404).json({ message: "Test not found" });
-    }
-    
-    const user = req.user as any;
-    if (test.createdBy !== user.id) {
-      return res.status(403).json({ message: "Unauthorized to access this test" });
-    }
-    
+    if (!test) return res.status(404).json({ message: "Test not found" });
+    const user = await storage.getUser(req.user.id);
+    if (test.createdBy !== user.id) return res.status(403).json({ message: "Unauthorized to access this test" });
     const questions = await storage.getQuestionsByTest(testId);
     const stats = await storage.getTestStats(testId);
-    
-    res.json({
-      ...test,
-      questions,
-      stats
-    });
+    res.json({ ...test, questions, stats });
   });
 
-  app.post("/api/tests", isAuthenticated, async (req, res) => {
+  app.post("/api/tests", verifyJwt, async (req, res) => {
     try {
-      const user = req.user as any;
+      const user = await storage.getUser(req.user.id);
       const testData = insertTestSchema.parse({
         ...req.body,
         createdBy: user.id
@@ -275,7 +189,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/tests/:id", isAuthenticated, async (req, res) => {
+  app.put("/api/tests/:id", verifyJwt, async (req, res) => {
     try {
       const testId = parseInt(req.params.id);
       const test = await storage.getTest(testId);
@@ -284,7 +198,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Test not found" });
       }
       
-      const user = req.user as any;
+      const user = await storage.getUser(req.user.id);
       if (test.createdBy !== user.id) {
         return res.status(403).json({ message: "Unauthorized to update this test" });
       }
@@ -296,7 +210,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/tests/:id", isAuthenticated, async (req, res) => {
+  app.delete("/api/tests/:id", verifyJwt, async (req, res) => {
     const testId = parseInt(req.params.id);
     const test = await storage.getTest(testId);
     
@@ -304,7 +218,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(404).json({ message: "Test not found" });
     }
     
-    const user = req.user as any;
+    const user = await storage.getUser(req.user.id);
     if (test.createdBy !== user.id) {
       return res.status(403).json({ message: "Unauthorized to delete this test" });
     }
@@ -318,7 +232,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Question routes
-  app.post("/api/questions", isAuthenticated, async (req, res) => {
+  app.post("/api/questions", verifyJwt, async (req, res) => {
     try {
       const questionData = insertQuestionSchema.parse(req.body);
       
@@ -328,7 +242,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Test not found" });
       }
       
-      const user = req.user as any;
+      const user = await storage.getUser(req.user.id);
       if (test.createdBy !== user.id) {
         return res.status(403).json({ message: "Unauthorized to add questions to this test" });
       }
@@ -340,7 +254,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/questions/:id", isAuthenticated, async (req, res) => {
+  app.put("/api/questions/:id", verifyJwt, async (req, res) => {
     try {
       const questionId = parseInt(req.params.id);
       const question = await storage.getQuestion(questionId);
@@ -355,7 +269,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Test not found" });
       }
       
-      const user = req.user as any;
+      const user = await storage.getUser(req.user.id);
       if (test.createdBy !== user.id) {
         return res.status(403).json({ message: "Unauthorized to update questions for this test" });
       }
@@ -367,7 +281,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/questions/:id", isAuthenticated, async (req, res) => {
+  app.delete("/api/questions/:id", verifyJwt, async (req, res) => {
     const questionId = parseInt(req.params.id);
     const question = await storage.getQuestion(questionId);
     
@@ -381,7 +295,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(404).json({ message: "Test not found" });
     }
     
-    const user = req.user as any;
+    const user = await storage.getUser(req.user.id);
     if (test.createdBy !== user.id) {
       return res.status(403).json({ message: "Unauthorized to delete questions for this test" });
     }
@@ -395,9 +309,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Candidate routes
-  app.post("/api/candidates", isAuthenticated, async (req, res) => {
+  app.post("/api/candidates", verifyJwt, async (req, res) => {
     try {
-      const user = req.user as any;
+      const user = await storage.getUser(req.user.id);
       const candidateData = insertCandidateSchema.parse({
         ...req.body,
         invitedBy: user.id,
@@ -438,7 +352,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/tests/:id/candidates", isAuthenticated, async (req, res) => {
+  app.get("/api/tests/:id/candidates", verifyJwt, async (req, res) => {
     const testId = parseInt(req.params.id);
     const test = await storage.getTest(testId);
     
@@ -446,7 +360,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(404).json({ message: "Test not found" });
     }
     
-    const user = req.user as any;
+    const user = await storage.getUser(req.user.id);
     if (test.createdBy !== user.id) {
       return res.status(403).json({ message: "Unauthorized to view candidates for this test" });
     }
@@ -654,7 +568,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Bulk candidate invitation
-  app.post("/api/candidates/bulk-invite", isAuthenticated, async (req, res) => {
+  app.post("/api/candidates/bulk-invite", verifyJwt, async (req, res) => {
     const { candidates, testId } = req.body;
     if (!Array.isArray(candidates)) {
       return res.status(400).json({ error: "Candidates array is required." });
@@ -663,7 +577,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(400).json({ error: "Test ID is required." });
     }
 
-    const user = req.user as any;
+    const user = await storage.getUser(req.user.id);
     const test = await storage.getTest(testId);
     
     if (!test) {
@@ -752,7 +666,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check if user has permission to delete candidates for this test
-      if (test.createdBy !== req.user?.id) {
+      const user = await storage.getUser(req.user.id);
+      if (test.createdBy !== user.id) {
         return res.status(403).json({ error: "Not authorized to delete candidates for this test" });
       }
 
