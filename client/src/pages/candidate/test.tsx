@@ -21,6 +21,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 type QuestionType = "multipleChoice" | "coding" | "subjective" | "patternRecognition";
 
@@ -50,6 +51,7 @@ const getResponseStorageKey = (testLink: string, questionId: number) => `respons
 export default function CandidateTest() {
   const [isRoute, params] = useRoute("/take-test/:testLink");
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answeredQuestions, setAnsweredQuestions] = useState<number[]>([]);
   const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false);
@@ -187,10 +189,22 @@ export default function CandidateTest() {
     setCurrentQuestionIndex(index);
   };
 
-  const handleStartTest = () => {
-    refetch();
-    // The backend will handle setting startedAt when the test data is fetched
-    // window.location.reload();
+  const handleStartTest = async () => {
+    try {
+      // Call the start endpoint
+      const res = await apiRequest("POST", `/api/candidate/${testLink}/start`);
+      const data = await res.json();
+      
+      // Refetch test data to get updated startedAt
+      refetch();
+    } catch (error) {
+      console.error("Failed to start test:", error);
+      toast({
+        title: "Error",
+        description: "Failed to start the test. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
   
   if (!isRoute) {
@@ -352,12 +366,12 @@ console.log(testData,'testData');
       {/* Main content */}
       <main className="flex-1 pb-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <QuestionNavigation
+          {/* <QuestionNavigation
             totalQuestions={testData.questions.length}
             currentQuestionIndex={currentQuestionIndex}
             answeredQuestions={answeredQuestions}
             onQuestionSelect={selectQuestion}
-          />
+          /> */}
           
           {currentQuestion && (
             <QuestionView 

@@ -388,14 +388,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(403).json({ message: "This test has already been completed" });
     }
     
-    // If the test is pending, mark it as in_progress
-    if (candidate.status === "pending") {
-      await storage.updateCandidate(candidate.id, { 
-        status: "in_progress",
-        startedAt: new Date()
-      });
-    }
-    
     const questions = await storage.getQuestionsByTest(test.id);
     
     // Return test details and questions without answers
@@ -682,6 +674,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error deleting candidate:", error);
       res.status(500).json({ error: "Failed to delete candidate" });
     }
+  });
+
+  // Add this route with the other candidate routes
+  app.post("/api/candidate/:testLink/start", async (req, res) => {
+    const testLink = req.params.testLink;
+    const candidate = await storage.getCandidateByTestLink(testLink);
+    
+    if (!candidate) {
+      return res.status(404).json({ message: "Invalid test link" });
+    }
+    
+    // Don't allow starting completed tests
+    if (candidate.status === "completed") {
+      return res.status(403).json({ message: "This test has already been completed" });
+    }
+    
+    // Don't allow starting tests that are already in progress
+    if (candidate.status === "in_progress") {
+      return res.status(403).json({ message: "This test is already in progress" });
+    }
+    
+    // Start the test
+    const updatedCandidate = await storage.updateCandidate(candidate.id, {
+      status: "in_progress",
+      startedAt: new Date()
+    });
+    
+    res.json({
+      startedAt: updatedCandidate.startedAt
+    });
   });
 
   // Setup HTTP server
