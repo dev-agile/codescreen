@@ -406,9 +406,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type: q.type,
         content: q.content,
         codeSnippet: q.codeSnippet,
-        options: q.type === "multipleChoice" ? q.options : undefined,
+        options: (q.type === "multipleChoice" || q.type === "patternRecognition") ? q.options : undefined,
         testCases: q.type === "coding" ? q.testCases : undefined,
         evaluationGuidelines: q.type === "subjective" ? q.evaluationGuidelines : undefined,
+        imageUrl: q.type === "patternRecognition" ? q.imageUrl : undefined,
       }))
     });
   });

@@ -329,42 +329,18 @@ export function QuestionView({
                 </div>
               </div>
             )}
-            
             {question.options && (
               <div className="mt-6">
                 <h5 className="text-md font-medium text-gray-900 mb-4">Select the next pattern in the sequence:</h5>
                 <RadioGroup 
                   value={response} 
                   onValueChange={handleResponseChange}
-                  className="grid grid-cols-2 gap-4"
+                  className="space-y-2"
                 >
-                  {question.options.map((optionUrl, index) => (
-                    <div key={index} className="relative">
-                      <RadioGroupItem 
-                        value={index.toString()} 
-                        id={`pattern-option-${index}`}
-                        className="sr-only"
-                      />
-                      <Label 
-                        htmlFor={`pattern-option-${index}`} 
-                        className="cursor-pointer block"
-                      >
-                        <div className={`border-2 rounded-md p-2 transition-all ${response === index.toString() ? 'border-primary' : 'border-gray-200'}`}>
-                          <div className="aspect-square flex items-center justify-center bg-gray-50">
-                            <img 
-                              src={optionUrl} 
-                              alt={`Pattern option ${index + 1}`} 
-                              className="max-w-full max-h-full object-contain" 
-                              onError={(e) => { 
-                                (e.target as HTMLImageElement).src = "https://placehold.co/300x300?text=Option+Not+Available";
-                              }} 
-                            />
-                          </div>
-                          <div className="mt-2 text-center text-sm font-medium">
-                            Option {index + 1}
-                          </div>
-                        </div>
-                      </Label>
+                  {question.options.map((option, index) => (
+                    <div key={index} className="flex items-center space-x-2">
+                      <RadioGroupItem value={index.toString()} id={`pattern-option-${index}`} />
+                      <Label htmlFor={`pattern-option-${index}`} className="text-gray-700">{option}</Label>
                     </div>
                   ))}
                 </RadioGroup>

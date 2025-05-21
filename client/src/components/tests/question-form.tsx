@@ -306,7 +306,6 @@ export function QuestionForm({ testId, questionId, defaultValues, onClose }: Que
                         Add Option
                       </Button>
                     </div>
-                    
                     <FormField
                       control={form.control}
                       name="answer"
@@ -462,7 +461,6 @@ export function QuestionForm({ testId, questionId, defaultValues, onClose }: Que
                       </FormItem>
                     )}
                   />
-                  
                   {imageUrl && (
                     <div className="mt-2 p-4 border rounded-md">
                       <p className="text-sm font-medium mb-2">Image Preview:</p>
@@ -476,7 +474,6 @@ export function QuestionForm({ testId, questionId, defaultValues, onClose }: Que
                       />
                     </div>
                   )}
-                  
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <FormLabel>Pattern Options</FormLabel>
@@ -490,7 +487,6 @@ export function QuestionForm({ testId, questionId, defaultValues, onClose }: Que
                         Add Option
                       </Button>
                     </div>
-                    
                     <FormField
                       control={form.control}
                       name="answer"
@@ -504,13 +500,12 @@ export function QuestionForm({ testId, questionId, defaultValues, onClose }: Que
                             {options.map((option, index) => (
                               <div key={index} className="flex items-center space-x-2">
                                 <RadioGroupItem value={index.toString()} id={`pattern-option-${index}`} />
-                                <div className="flex-1">
-                                  <FileUpload 
-                                    onUploadComplete={(url) => handleOptionChange(index, url)}
-                                    currentImageUrl={option}
-                                    label={`Upload Option ${index + 1}`}
-                                  />
-                                </div>
+                                <Input
+                                  value={option}
+                                  onChange={(e) => handleOptionChange(index, e.target.value)}
+                                  placeholder={`Option ${index + 1}`}
+                                  className="flex-1"
+                                />
                                 <Button
                                   type="button"
                                   variant="ghost"
@@ -523,30 +518,12 @@ export function QuestionForm({ testId, questionId, defaultValues, onClose }: Que
                             ))}
                           </RadioGroup>
                           <FormDescription>
-                            Add image URLs for each possible next pattern and select the correct one
+                            Enter the possible next patterns as text and select the correct one
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                    
-                    <div className="grid grid-cols-2 gap-2 mt-4">
-                      {options.map((optionUrl, index) => (
-                        optionUrl && (
-                          <div key={index} className="border p-2 rounded-md">
-                            <p className="text-xs mb-1">Option {index + 1}:</p>
-                            <img 
-                              src={optionUrl} 
-                              alt={`Pattern option ${index + 1}`} 
-                              className="w-full h-auto max-h-32 object-contain" 
-                              onError={(e) => { 
-                                (e.target as HTMLImageElement).src = "https://placehold.co/300x200?text=Invalid+URL";
-                              }} 
-                            />
-                          </div>
-                        )
-                      ))}
-                    </div>
                   </div>
                 </>
               )}
