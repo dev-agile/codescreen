@@ -615,14 +615,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const candidate = await storage.createCandidate(candidateData);
         
         // Send invitation email
-        // const emailResult = await sendTestInvitation(
-        //   candidate.email,
-        //   candidate.name,
-        //   test.title,
-        //   candidate.testLink,
-        //   test.duration,
-        //   user.company
-        // );
+        const emailResult = await sendTestInvitation(
+          candidate.email,
+          candidate.name,
+          test.title,
+          candidate.testLink,
+          test.duration,
+          user.company
+        );
         
         results.push({ 
           ...c,
