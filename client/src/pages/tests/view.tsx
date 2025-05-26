@@ -211,6 +211,20 @@ export default function ViewTest() {
           <div className="flex space-x-2">
             <Button 
               variant="outline"
+              onClick={() => {
+                const url = `${window.location.origin}/public-test/${testId}`;
+                navigator.clipboard.writeText(url);
+                toast({
+                  title: "Public link copied",
+                  description: "Public test link has been copied to clipboard",
+                });
+              }}
+            >
+              <Share2 className="h-4 w-4 mr-1.5" />
+              Share Public Link
+            </Button>
+            <Button 
+              variant="outline"
               onClick={() => setIsInviteDialogOpen(true)}
             >
               <Users className="h-4 w-4 mr-1.5" />
@@ -303,6 +317,21 @@ export default function ViewTest() {
                       </dl>
                       
                       <div className="mt-4 flex space-x-2">
+                        <Button 
+                          variant="outline"
+                          className="w-full"
+                          onClick={() => {
+                            const url = `${window.location.origin}/public-test/${testId}`;
+                            navigator.clipboard.writeText(url);
+                            toast({
+                              title: "Public link copied",
+                              description: "Public test link has been copied to clipboard",
+                            });
+                          }}
+                        >
+                          <Share2 className="h-4 w-4 mr-1.5" />
+                          Share Public Link
+                        </Button>
                         <Button 
                           variant="outline"
                           className="w-full" 
@@ -415,6 +444,7 @@ export default function ViewTest() {
                               <TableRow>
                                 <TableHead>Name</TableHead>
                                 <TableHead>Email</TableHead>
+                                <TableHead>Phone</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead>Invited</TableHead>
                                 <TableHead>Score</TableHead>
@@ -426,6 +456,7 @@ export default function ViewTest() {
                                 <TableRow key={candidate.id}>
                                   <TableCell>{candidate.name}</TableCell>
                                   <TableCell>{candidate.email}</TableCell>
+                                  <TableCell>{candidate.phone || "-"}</TableCell>
                                   <TableCell>
                                     <Badge
                                       variant={
@@ -488,6 +519,7 @@ export default function ViewTest() {
                               <TableRow>
                                 <TableHead>Name</TableHead>
                                 <TableHead>Email</TableHead>
+                                <TableHead>Phone</TableHead>
                                 <TableHead>Completed At</TableHead>
                                 <TableHead>Score</TableHead>
                                 <TableHead>Time Taken</TableHead>
@@ -498,6 +530,7 @@ export default function ViewTest() {
                                 <TableRow key={candidate.id}>
                                   <TableCell>{candidate.name}</TableCell>
                                   <TableCell>{candidate.email}</TableCell>
+                                  <TableCell>{candidate.phone || "-"}</TableCell>
                                   <TableCell>{formatDate(candidate.completedAt)}</TableCell>
                                   <TableCell>
                                     <Badge
@@ -545,6 +578,7 @@ export default function ViewTest() {
                               <TableRow>
                                 <TableHead>Name</TableHead>
                                 <TableHead>Email</TableHead>
+                                <TableHead>Phone</TableHead>
                                 <TableHead>Started At</TableHead>
                                 <TableHead>Time Elapsed</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
@@ -555,6 +589,7 @@ export default function ViewTest() {
                                 <TableRow key={candidate.id}>
                                   <TableCell>{candidate.name}</TableCell>
                                   <TableCell>{candidate.email}</TableCell>
+                                  <TableCell>{candidate.phone || "-"}</TableCell>
                                   <TableCell>{formatDate(candidate.startedAt)}</TableCell>
                                   <TableCell>
                                     {candidate.startedAt
@@ -612,6 +647,7 @@ export default function ViewTest() {
                               <TableRow>
                                 <TableHead>Name</TableHead>
                                 <TableHead>Email</TableHead>
+                                <TableHead>Phone</TableHead>
                                 <TableHead>Invited At</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                               </TableRow>
@@ -621,6 +657,7 @@ export default function ViewTest() {
                                 <TableRow key={candidate.id}>
                                   <TableCell>{candidate.name}</TableCell>
                                   <TableCell>{candidate.email}</TableCell>
+                                  <TableCell>{candidate.phone || "-"}</TableCell>
                                   <TableCell>{formatDate(candidate.invitedAt)}</TableCell>
                                   <TableCell className="text-right">
                                     <div className="flex justify-end space-x-2">

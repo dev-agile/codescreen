@@ -41,6 +41,7 @@ export const candidates = pgTable("candidates", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull(),
+  phone: text("phone"),
   testId: integer("test_id").notNull(),
   invitedBy: integer("invited_by").notNull(),
   testLink: text("test_link").notNull().unique(),
@@ -96,6 +97,7 @@ export const insertQuestionSchema = createInsertSchema(questions).pick({
 export const insertCandidateSchema = createInsertSchema(candidates).pick({
   name: true,
   email: true,
+  phone: true,
   testId: true,
   invitedBy: true,
   testLink: true,

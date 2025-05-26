@@ -709,6 +709,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Public test registration
+  app.post("/api/public-test/:testId/register", async (req, res) => {
+    try {
+      const testId = parseInt(req.params.testId);
+      const { name, email, phone } = req.body;
+
+      // Validate test exists and is public
+      const test = await storage.getTest(testId);
+      if (!test) {
+        return res.status(404).json({ message: "Test not found" });
+      }
+
+      // Check if email already took this test
+      const existingCandidate = await storage.getCandidateByEmailAndTest(email, testId);
+      if (existingCandidate) {
+        return res.status(400).json({ message: "You have already taken this test" });
+      }
+
+      // Create candidate
+      const candidateData = {
+        name,
+        email,
+        phone,
+        testId,
+        testLink: nanoid(10),
+        status: "pending",
+        invitedBy: test.createdBy // Link to test creator
+      };
+
+      const candidate = await storage.createCandidate(candidateData);
+      
+      res.status(201).json({
+        testLink: candidate.testLink
+      });
+    } catch (error: any) {
+      console.error("Error registering for public test:", error);
+      res.status(500).json({ message: "Failed to register for test" });
+    }
+  });
+
   // Setup HTTP server
   const httpServer = createServer(app);
 

@@ -101,6 +101,19 @@ export class DatabaseStorage implements IStorage {
     return results[0] || null;
   }
 
+  async getCandidateByEmailAndTest(email: string, testId: number): Promise<Candidate | null> {
+    const results = await db
+      .select()
+      .from(candidates)
+      .where(
+        and(
+          eq(candidates.email, email),
+          eq(candidates.testId, testId)
+        )
+      );
+    return results[0] || null;
+  }
+
   async getCandidateByTestLink(testLink: string): Promise<Candidate | undefined> {
     const results = await db.select().from(candidates).where(eq(candidates.testLink, testLink));
     return results[0];

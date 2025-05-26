@@ -37,6 +37,7 @@ export interface IStorage {
   updateCandidate(id: number, candidate: Partial<InsertCandidate>): Promise<Candidate | undefined>;
   getCandidatesInProgress(): Promise<Candidate[]>;
   deleteCandidate(id: number): Promise<void>;
+  getCandidateByEmailAndTest(email: string, testId: number): Promise<Candidate | null>;
   
   // Response operations
   getResponse(id: number): Promise<Response | undefined>;
@@ -475,6 +476,14 @@ export class MemStorage implements IStorage {
     return activities
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
       .slice(0, limit);
+  }
+
+  async getCandidateByEmailAndTest(email: string, testId: number): Promise<Candidate | null> {
+    const candidates = Array.from(this.candidates.values());
+    const candidate = candidates.find(
+      (c) => c.email === email && c.testId === testId
+    );
+    return candidate || null;
   }
 }
 

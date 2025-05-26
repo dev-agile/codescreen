@@ -15,6 +15,7 @@ import ViewTest from "@/pages/tests/view";
 import CandidatesIndex from "@/pages/candidates/index";
 import CandidateTest from "@/pages/candidate/test";
 import CandidateComplete from "@/pages/candidate/complete";
+import PublicTestPage from "@/pages/public-test/[testId]";
 
 function Router() {
   return (
@@ -35,6 +36,7 @@ function Router() {
       {/* Candidate Routes */}
       <Route path="/take-test/:testLink" component={CandidateTest} />
       <Route path="/test-complete" component={CandidateComplete} />
+      <Route path="/public-test/:testId" component={PublicTestPage} />
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />
