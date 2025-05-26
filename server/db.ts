@@ -11,9 +11,11 @@ if (!process.env.DATABASE_URL) {
 // ✅ Use SSL for Render PostgreSQL
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false,
-  },
+  ...(process.env.NODE_ENV === 'production' ? {
+    ssl: {
+      rejectUnauthorized: false,
+    }
+  } : {}),
 });
 
 export const db = drizzle(pool, { schema });

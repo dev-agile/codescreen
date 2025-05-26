@@ -132,6 +132,22 @@ export default function CandidateTest() {
     }
   }, [error]);
   
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      const testStarted = localStorage.getItem("testStarted");
+      console.log("testStarted", testStarted);
+      if (testStarted === "true") {
+        e.preventDefault(); // Needed for some older browsers
+        e.returnValue = ""; // Chrome requires setting this to show the prompt
+      }
+    };
+  
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, []);
+  
   // Track answered questions
   const handleSaveResponse = () => {
     setAnsweredQuestions(prev => {
