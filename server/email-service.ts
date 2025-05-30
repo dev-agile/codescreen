@@ -67,7 +67,6 @@ export async function sendTestInvitation(
       test_duration: duration,
       company_name: companyName || 'Cognivac',
       subject: "You've been invited to take a logical assessment",
-      html: testInvitationTemplate
     };
 
     console.log('Sending email with params:', {
