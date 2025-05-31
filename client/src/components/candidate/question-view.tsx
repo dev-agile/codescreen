@@ -229,9 +229,10 @@ export function QuestionView({
       </CardHeader>
       
       <CardContent className="px-4 py-5 sm:p-6">
-        <h4 className="text-xl font-medium text-gray-900 mb-4">
-          {question.content}
-        </h4>
+        <h4 
+          className="text-xl font-medium text-gray-900 mb-4"
+          dangerouslySetInnerHTML={{ __html: question.content.replace(/\n/g, '<br/>') }}
+        />
         
         {question.codeSnippet && (
           <div className="text-sm text-gray-700 mb-6">
