@@ -322,7 +322,7 @@ export function QuestionView({
                   <img 
                     src={question.imageUrl} 
                     alt="Pattern sequence" 
-                    className="max-w-full h-auto" 
+                    className="max-w-full h-auto max-h-[300px] object-contain" 
                     onError={(e) => { 
                       (e.target as HTMLImageElement).src = "https://placehold.co/600x200?text=Image+Not+Available";
                     }} 

@@ -1,4 +1,4 @@
-import type { Express, Request, Response } from "express";
+import { Express, Request, Response, NextFunction } from 'express';
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { registerUploadRoutes } from "./upload-handler";
@@ -8,12 +8,14 @@ import {
   insertQuestionSchema,
   insertCandidateSchema,
   insertResponseSchema,
-  loginSchema
+  loginSchema,
+  Candidate
 } from "@shared/schema";
 import { nanoid } from "nanoid";
 import jwt from "jsonwebtoken";
 import cors from 'cors';
 import { sendTestInvitation } from "./email-service";
+import { ParsedQs } from 'qs';
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-jwt-secret";
 
@@ -21,7 +23,8 @@ function signJwt(user) {
   return jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: "7d" });
 }
 
-function verifyJwt(req, res, next) {
+// Middleware type definitions
+const verifyJwt = (req: Request & { user?: any }, res: Response, next: NextFunction) => {
   const auth = req.headers.authorization;
   if (!auth || !auth.startsWith("Bearer ")) {
     return res.status(401).json({ message: "Unauthorized" });
@@ -33,7 +36,7 @@ function verifyJwt(req, res, next) {
   } catch {
     return res.status(401).json({ message: "Unauthorized" });
   }
-}
+};
 
 // Extracted function for candidate test submission
 export async function submitCandidateTest(candidate: Candidate, autoSubmitted = false) {
@@ -65,6 +68,7 @@ export async function submitCandidateTest(candidate: Candidate, autoSubmitted = 
   };
 }
 
+// Route handler type definitions
 export async function registerRoutes(app: Express): Promise<Server> {
   // Register upload routes
 
@@ -77,7 +81,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerUploadRoutes(app);
 
   // Auth routes
-  app.post("/api/auth/login", async (req, res) => {
+  app.post("/api/auth/login", async (req: Request, res: Response) => {
     try {
       const parsed = loginSchema.parse(req.body);
       const user = await storage.getUserByUsername(parsed.username);
@@ -98,7 +102,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/auth/signup", async (req, res) => {
+  app.post("/api/auth/signup", async (req: Request, res: Response) => {
     try {
       const userData = insertUserSchema.parse(req.body);
       const existingUser = await storage.getUserByUsername(userData.username);
@@ -124,12 +128,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/auth/logout", (req, res) => {
+  app.post("/api/auth/logout", (req: Request, res: Response) => {
     // JWT logout is handled client-side by deleting the token
     res.json({ message: "Logged out successfully" });
   });
 
-  app.get("/api/auth/me", verifyJwt, async (req, res) => {
+  app.get("/api/auth/me", verifyJwt, async (req: Request, res: Response) => {
     const user = await storage.getUser(req.user.id);
     if (!user) return res.status(401).json({ message: "Unauthorized" });
     res.json({
@@ -142,20 +146,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Dashboard routes
-  app.get("/api/dashboard/stats", verifyJwt, async (req, res) => {
+  app.get("/api/dashboard/stats", verifyJwt, async (req: Request, res: Response) => {
     const user = await storage.getUser(req.user.id);
     const stats = await storage.getDashboardStats(user.id);
     res.json(stats);
   });
 
-  app.get("/api/dashboard/recent-activity", verifyJwt, async (req, res) => {
+  app.get("/api/dashboard/recent-activity", verifyJwt, async (req: Request, res: Response) => {
     const user = await storage.getUser(req.user.id);
     const activities = await storage.getRecentActivity(user.id);
     res.json(activities);
   });
 
   // Test routes
-  app.get("/api/tests", verifyJwt, async (req, res) => {
+  app.get("/api/tests", verifyJwt, async (req: Request, res: Response) => {
     const user = await storage.getUser(req.user.id);
     const tests = await storage.getTestsByUser(user.id);
     const testsWithStats = await Promise.all(tests.map(async (test) => {
@@ -165,7 +169,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(testsWithStats);
   });
 
-  app.get("/api/tests/:id", verifyJwt, async (req, res) => {
+  app.get("/api/tests/:id", verifyJwt, async (req: Request, res: Response) => {
     const testId = parseInt(req.params.id);
     const test = await storage.getTest(testId);
     if (!test) return res.status(404).json({ message: "Test not found" });
@@ -176,7 +180,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ ...test, questions, stats });
   });
 
-  app.post("/api/tests", verifyJwt, async (req, res) => {
+  app.post("/api/tests", verifyJwt, async (req: Request, res: Response) => {
     try {
       const user = await storage.getUser(req.user.id);
       const testData = insertTestSchema.parse({
@@ -191,7 +195,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/tests/:id", verifyJwt, async (req, res) => {
+  app.put("/api/tests/:id", verifyJwt, async (req: Request, res: Response) => {
     try {
       const testId = parseInt(req.params.id);
       const test = await storage.getTest(testId);
@@ -212,7 +216,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/tests/:id", verifyJwt, async (req, res) => {
+  app.delete("/api/tests/:id", verifyJwt, async (req: Request, res: Response) => {
     const testId = parseInt(req.params.id);
     const test = await storage.getTest(testId);
     
@@ -234,7 +238,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Question routes
-  app.post("/api/questions", verifyJwt, async (req, res) => {
+  app.post("/api/questions", verifyJwt, async (req: Request, res: Response) => {
     try {
       const questionData = insertQuestionSchema.parse(req.body);
       
@@ -392,6 +396,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     const questions = await storage.getQuestionsByTest(test.id);
     
+    // Shuffle questions if enabled
+    let orderedQuestions = [...questions];
+    if (test.shuffleQuestions) {
+      orderedQuestions = orderedQuestions.sort(() => Math.random() - 0.5);
+    }
+    
     // Return test details and questions without answers
     res.json({
       candidateId: candidate.id,
@@ -401,7 +411,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       testDescription: test.description,
       duration: test.duration,
       startedAt: candidate.startedAt,
-      questions: questions.map(q => ({
+      questions: orderedQuestions.map(q => ({
         id: q.id,
         type: q.type,
         content: q.content,
