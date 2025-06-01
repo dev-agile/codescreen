@@ -62,6 +62,9 @@ import BulkInvite from "@/components/candidate/bulk-invite";
 const inviteCandidateSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email address"),
+  phone: z.string()
+    .regex(/^[0-9]{10}$/, "Phone number must be exactly 10 digits")
+    .transform(val => `+91${val}`),
 });
 
 type InviteCandidateFormValues = z.infer<typeof inviteCandidateSchema>;
@@ -135,6 +138,7 @@ export default function ViewTest() {
     defaultValues: {
       name: "",
       email: "",
+      phone: "",
     },
   });
   
@@ -738,6 +742,30 @@ export default function ViewTest() {
                     <FormControl>
                       <Input type="email" placeholder="john@example.com" {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={inviteForm.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number</FormLabel>
+                    <FormControl>
+                      <div className="flex">
+                        <span className="flex items-center px-3 border border-r-0 rounded-l-md bg-gray-50 text-gray-500">+91</span>
+                        <Input 
+                          type="tel" 
+                          placeholder="9876543210" 
+                          className="rounded-l-none" 
+                          maxLength={10}
+                          {...field}
+                        />
+                      </div>
+                    </FormControl>
+                    <FormDescription>Enter 10 digit mobile number without country code</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

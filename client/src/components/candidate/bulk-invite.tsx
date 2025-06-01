@@ -80,7 +80,7 @@ export default function BulkInvite({ onSuccess, testId }: BulkInviteProps) {
 
       rows.slice(1).forEach((row, i) => {
         const name = row[nameIdx]?.toString().trim() || "";
-        const phone = row[phoneIdx]?.toString().trim() || "";
+        const phone = row[phoneIdx]?.toString().trim().replace(/[^0-9]/g, "") || "";
         const email = row[emailIdx]?.toString().trim() || "";
         let error = "";
 
@@ -88,11 +88,17 @@ export default function BulkInvite({ onSuccess, testId }: BulkInviteProps) {
           error = "Missing required field(s)";
         } else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
           error = "Invalid email format";
-        } else if (!/^[0-9+\-\s()]{7,}$/.test(phone)) {
-          error = "Invalid phone number";
+        } else if (!/^[0-9]{10}$/.test(phone)) {
+          error = "Phone number must be exactly 10 digits";
         }
 
-        const candidate: Candidate = { name, phone, email, rowNumber: i + 2, error };
+        const candidate: Candidate = { 
+          name, 
+          phone: phone ? `+91${phone}` : "", 
+          email, 
+          rowNumber: i + 2, 
+          error 
+        };
         if (error) {
           invalid.push(candidate);
         } else {
