@@ -12,6 +12,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,7 +21,9 @@ import { toast } from "@/hooks/use-toast";
 const publicTestFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email"),
-  phone: z.string().min(7, "Phone number must be at least 7 digits").regex(/^[0-9+\-\s()]{7,}$/, "Invalid phone number format"),
+  phone: z.string()
+    .regex(/^[0-9]{10}$/, "Phone number must be exactly 10 digits")
+    .transform(val => `+91${val}`),
 });
 
 type FormData = z.infer<typeof publicTestFormSchema>;
@@ -103,8 +106,18 @@ export default function PublicTestPage() {
                   <FormItem>
                     <FormLabel>Phone Number</FormLabel>
                     <FormControl>
-                      <Input placeholder="+1234567890" {...field} />
+                      <div className="flex">
+                        <span className="flex items-center px-3 border border-r-0 rounded-l-md bg-gray-50 text-gray-500">+91</span>
+                        <Input 
+                          type="tel" 
+                          placeholder="9876543210" 
+                          className="rounded-l-none" 
+                          maxLength={10}
+                          {...field}
+                        />
+                      </div>
                     </FormControl>
+                    <FormDescription>Enter 10 digit mobile number without country code</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
