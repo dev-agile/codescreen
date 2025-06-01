@@ -467,7 +467,7 @@ export function QuestionForm({ testId, questionId, defaultValues, onClose }: Que
                       <img 
                         src={imageUrl} 
                         alt="Pattern sequence" 
-                        className="max-w-full h-auto border rounded-md" 
+                        className="max-w-full h-auto max-h-[200px] object-contain border rounded-md" 
                         onError={(e) => { 
                           (e.target as HTMLImageElement).src = "https://placehold.co/600x400?text=Invalid+Image+URL";
                         }} 

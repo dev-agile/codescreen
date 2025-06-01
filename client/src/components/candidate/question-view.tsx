@@ -317,7 +317,6 @@ export function QuestionView({
           <>
             {question.imageUrl && (
               <div className="mb-6">
-                <h5 className="text-md font-medium text-gray-900 mb-2">Pattern Sequence:</h5>
                 <div className="bg-white border rounded-md p-4 flex justify-center">
                   <img 
                     src={question.imageUrl} 

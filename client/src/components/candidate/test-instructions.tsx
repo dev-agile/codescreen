@@ -104,6 +104,10 @@ export default function TestInstructionsScreen({ testData, onStart }: TestInstru
         <div className="space-y-4 mb-8">
           <h2 className="text-lg font-semibold text-gray-900">Important Rules</h2>
           <div className="space-y-3">
+            <div className="flex items-start text-gray-700">
+              <FileText className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
+              <span>Please keep a pen and paper ready for solving pattern recognition questions</span>
+            </div>
             <div className="flex items-start text-red-600">
               <AlertTriangle className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
               <span>Tab switching more than 3 times will auto-submit the test</span>
