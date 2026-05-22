@@ -1,7 +1,10 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import { Link } from "wouter";
+import { apiRequest } from "@/lib/queryClient";
+import { toast } from "@/hooks/use-toast";
+import type { Test } from "@shared/schema";
 import Sidebar from "@/components/ui/sidebar";
 import MobileSidebar from "@/components/ui/mobile-sidebar";
 import { Button } from "@/components/ui/button";
@@ -18,8 +21,19 @@ import {
   ClipboardList, 
   Eye, 
   Pencil, 
-  ExternalLink
+  ExternalLink,
+  Trash2,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -36,14 +50,44 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+type TestStats = {
+  total: number;
+  completed: number;
+  inProgress: number;
+  pending: number;
+  avgScore?: number;
+};
+
+type TestWithStats = Test & { stats: TestStats };
+
 export default function TestsIndex() {
   const { useRequireAuth } = useAuth();
   const user = useRequireAuth();
   const [searchQuery, setSearchQuery] = useState("");
+  const [testToDelete, setTestToDelete] = useState<TestWithStats | null>(null);
+  const queryClient = useQueryClient();
   
-  const { data: tests, isLoading } = useQuery({
+  const { data: tests, isLoading } = useQuery<TestWithStats[]>({
     queryKey: ["/api/tests"],
     enabled: !!user,
+  });
+
+  const deleteTestMutation = useMutation({
+    mutationFn: async (testId: number) => {
+      await apiRequest("DELETE", `/api/tests/${testId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tests"] });
+      setTestToDelete(null);
+      toast({ title: "Test deleted successfully" });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to delete test",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
   
   if (!user) {
@@ -51,7 +95,7 @@ export default function TestsIndex() {
   }
   
   // Filter tests based on search query
-  const filteredTests = tests?.filter((test: any) => 
+  const filteredTests = tests?.filter((test) =>
     test.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
@@ -115,7 +159,7 @@ export default function TestsIndex() {
                       </div>
                     </CardContent>
                   </Card>
-                ) : filteredTests?.length > 0 ? (
+                ) : (filteredTests?.length ?? 0) > 0 ? (
                   <Card>
                     <CardContent className="p-0">
                       <Table>
@@ -129,7 +173,7 @@ export default function TestsIndex() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {filteredTests.map((test: any) => (
+                          {filteredTests?.map((test) => (
                             <TableRow key={test.id}>
                               <TableCell className="font-medium">{test.title}</TableCell>
                               <TableCell className="hidden md:table-cell">
@@ -179,6 +223,16 @@ export default function TestsIndex() {
                                       <ExternalLink className="h-4 w-4 mr-2" />
                                       Invite Candidate
                                     </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      className="text-destructive focus:text-destructive"
+                                      onSelect={(e) => {
+                                        e.preventDefault();
+                                        setTestToDelete(test);
+                                      }}
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Delete Test
+                                    </DropdownMenuItem>
                                   </DropdownMenuContent>
                                 </DropdownMenu>
                               </TableCell>
@@ -222,7 +276,7 @@ export default function TestsIndex() {
                       </div>
                     </CardContent>
                   </Card>
-                ) : filteredTests?.filter((test: any) => test.stats.inProgress > 0).length > 0 ? (
+                ) : (filteredTests?.filter((test) => test.stats.inProgress > 0).length ?? 0) > 0 ? (
                   <Card>
                     <CardContent className="p-0">
                       <Table>
@@ -236,8 +290,8 @@ export default function TestsIndex() {
                         </TableHeader>
                         <TableBody>
                           {filteredTests
-                            .filter((test: any) => test.stats.inProgress > 0)
-                            .map((test: any) => (
+                            ?.filter((test) => test.stats.inProgress > 0)
+                            .map((test) => (
                               <TableRow key={test.id}>
                                 <TableCell className="font-medium">{test.title}</TableCell>
                                 <TableCell className="hidden md:table-cell">
@@ -281,6 +335,35 @@ export default function TestsIndex() {
           </div>
         </main>
       </div>
+
+      <AlertDialog
+        open={!!testToDelete}
+        onOpenChange={(open) => !open && setTestToDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete test?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete &quot;{testToDelete?.title}&quot; and all
+              its questions and candidate data. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteTestMutation.isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteTestMutation.isPending}
+              onClick={() =>
+                testToDelete && deleteTestMutation.mutate(testToDelete.id)
+              }
+            >
+              {deleteTestMutation.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -36,7 +36,7 @@ type TestFormValues = Omit<z.infer<typeof testFormSchema>, "createdBy">;
 interface TestFormProps {
   defaultValues?: TestFormValues;
   testId?: number;
-  onQuestionPhase?: () => void;
+  onQuestionPhase?: (testId: number) => void;
 }
 
 export function TestForm({ defaultValues, testId, onQuestionPhase }: TestFormProps) {
@@ -68,7 +68,7 @@ export function TestForm({ defaultValues, testId, onQuestionPhase }: TestFormPro
       });
       
       if (onQuestionPhase) {
-        onQuestionPhase();
+        onQuestionPhase(data.id);
       } else {
         setLocation(`/tests/${data.id}/edit`);
       }
@@ -95,8 +95,8 @@ export function TestForm({ defaultValues, testId, onQuestionPhase }: TestFormPro
         title: "Test updated successfully",
       });
       
-      if (onQuestionPhase) {
-        onQuestionPhase();
+      if (onQuestionPhase && testId) {
+        onQuestionPhase(testId);
       }
     },
     onError: (error: any) => {

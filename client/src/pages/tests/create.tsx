@@ -8,6 +8,9 @@ import QuestionForm from "@/components/tests/question-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
+import type { Test, Question } from "@shared/schema";
+
+type TestWithQuestions = Test & { questions?: Question[] };
 
 export default function CreateTest() {
   const { useRequireAuth } = useAuth();
@@ -17,16 +20,15 @@ export default function CreateTest() {
   const [isAddingQuestion, setIsAddingQuestion] = useState(false);
   
   // Only fetch test questions if we have a testId
-  const { data: test, isLoading } = useQuery({
+  const { data: test, isLoading } = useQuery<TestWithQuestions>({
     queryKey: [`/api/tests/${testId}`],
     enabled: !!testId,
   });
-  
   if (!user) {
     return null;
   }
-  
-  const handleQuestionPhase = () => {
+  const handleQuestionPhase = (id: number) => {
+    setTestId(id);
     setStep("questions");
   };
   
@@ -103,9 +105,9 @@ export default function CreateTest() {
                     <div className="text-center py-6">
                       <p>Loading questions...</p>
                     </div>
-                  ) : test?.questions?.length > 0 ? (
+                  ) : (test?.questions?.length ?? 0) > 0 ? (
                     <div className="space-y-4">
-                      {test.questions.map((question: any) => (
+                      {test?.questions?.map((question) => (
                         <div key={question.id}>
                           {/* Display questions here - will be implemented in the actual view */}
                           <div className="p-4 border rounded-md">
@@ -138,9 +140,9 @@ export default function CreateTest() {
               </Card>
             )}
             
-            {isAddingQuestion && test && (
+            {isAddingQuestion && testId && (
               <QuestionForm
-                testId={test.id}
+                testId={testId}
                 onClose={() => setIsAddingQuestion(false)}
               />
             )}

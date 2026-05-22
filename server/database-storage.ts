@@ -1,4 +1,4 @@
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { db } from './db';
 import {
@@ -58,6 +58,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteTest(id: number): Promise<boolean> {
+    const testCandidates = await db
+      .select({ id: candidates.id })
+      .from(candidates)
+      .where(eq(candidates.testId, id));
+    const candidateIds = testCandidates.map((c) => c.id);
+
+    if (candidateIds.length > 0) {
+      await db.delete(responses).where(inArray(responses.candidateId, candidateIds));
+      await db.delete(candidates).where(eq(candidates.testId, id));
+    }
+
+    await db.delete(questions).where(eq(questions.testId, id));
     const results = await db.delete(tests).where(eq(tests.id, id)).returning();
     return results.length > 0;
   }
