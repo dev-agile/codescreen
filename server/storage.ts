@@ -276,6 +276,28 @@ export class MemStorage implements IStorage {
   }
   
   async deleteTest(id: number): Promise<boolean> {
+    const candidateIds = Array.from(this.candidates.values())
+      .filter((c) => c.testId === id)
+      .map((c) => c.id);
+
+    for (const response of Array.from(this.responses.values())) {
+      if (candidateIds.includes(response.candidateId)) {
+        this.responses.delete(response.id);
+      }
+    }
+
+    for (const candidate of Array.from(this.candidates.values())) {
+      if (candidate.testId === id) {
+        this.candidates.delete(candidate.id);
+      }
+    }
+
+    for (const question of Array.from(this.questions.values())) {
+      if (question.testId === id) {
+        this.questions.delete(question.id);
+      }
+    }
+
     return this.tests.delete(id);
   }
   
