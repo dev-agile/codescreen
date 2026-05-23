@@ -5,9 +5,12 @@ import Sidebar from "@/components/ui/sidebar";
 import MobileSidebar from "@/components/ui/mobile-sidebar";
 import TestForm from "@/components/tests/test-form";
 import QuestionForm from "@/components/tests/question-form";
+import QuestionCard, { type QuestionType } from "@/components/tests/question-card";
+import BulkImportQuestions from "@/components/tests/bulk-import-questions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
+import { Plus, Upload } from "lucide-react";
 import type { Test, Question } from "@shared/schema";
 
 type TestWithQuestions = Test & { questions?: Question[] };
@@ -18,6 +21,7 @@ export default function CreateTest() {
   const [step, setStep] = useState<"details" | "questions">("details");
   const [testId, setTestId] = useState<number | null>(null);
   const [isAddingQuestion, setIsAddingQuestion] = useState(false);
+  const [isBulkImporting, setIsBulkImporting] = useState(false);
   
   // Only fetch test questions if we have a testId
   const { data: test, isLoading } = useQuery<TestWithQuestions>({
@@ -92,12 +96,22 @@ export default function CreateTest() {
                       </div>
                       <CardTitle>Questions</CardTitle>
                     </div>
-                    <Button 
-                      onClick={() => setIsAddingQuestion(true)}
-                      disabled={isAddingQuestion}
-                    >
-                      Add Question
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsBulkImporting(true)}
+                        disabled={isBulkImporting || isAddingQuestion}
+                      >
+                        <Upload className="h-4 w-4 mr-1.5" />
+                        Import JSON
+                      </Button>
+                      <Button
+                        onClick={() => setIsAddingQuestion(true)}
+                        disabled={isAddingQuestion || isBulkImporting}
+                      >
+                        Add Question
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="py-6">
@@ -108,19 +122,20 @@ export default function CreateTest() {
                   ) : (test?.questions?.length ?? 0) > 0 ? (
                     <div className="space-y-4">
                       {test?.questions?.map((question) => (
-                        <div key={question.id}>
-                          {/* Display questions here - will be implemented in the actual view */}
-                          <div className="p-4 border rounded-md">
-                            <h3 className="font-medium">{question.content}</h3>
-                            <p className="text-sm text-gray-500">
-                              Type: {question.type === "multipleChoice" 
-                                ? "Multiple Choice" 
-                                : question.type === "coding" 
-                                  ? "Coding" 
-                                  : "Subjective"}
-                            </p>
-                          </div>
-                        </div>
+                        <QuestionCard
+                          key={question.id}
+                          id={question.id}
+                          testId={testId!}
+                          type={question.type as QuestionType}
+                          content={question.content}
+                          codeSnippet={question.codeSnippet ?? undefined}
+                          options={question.options as string[]}
+                          answer={question.answer ?? undefined}
+                          testCases={question.testCases as any}
+                          evaluationGuidelines={question.evaluationGuidelines ?? undefined}
+                          points={question.points ?? 0}
+                          order={question.order ?? 0}
+                        />
                       ))}
                     </div>
                   ) : (
@@ -128,10 +143,11 @@ export default function CreateTest() {
                       <p className="text-sm text-gray-500 mb-4">
                         You haven't added any questions yet.
                       </p>
-                      <Button 
+                      <Button
                         onClick={() => setIsAddingQuestion(true)}
                         disabled={isAddingQuestion}
                       >
+                        <Plus className="h-4 w-4 mr-1.5" />
                         Add Your First Question
                       </Button>
                     </div>
@@ -144,6 +160,12 @@ export default function CreateTest() {
               <QuestionForm
                 testId={testId}
                 onClose={() => setIsAddingQuestion(false)}
+              />
+            )}
+            {isBulkImporting && testId && (
+              <BulkImportQuestions
+                testId={testId}
+                onClose={() => setIsBulkImporting(false)}
               />
             )}
           </div>
