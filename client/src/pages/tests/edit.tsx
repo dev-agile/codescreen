@@ -6,11 +6,15 @@ import Sidebar from "@/components/ui/sidebar";
 import MobileSidebar from "@/components/ui/mobile-sidebar";
 import TestForm from "@/components/tests/test-form";
 import QuestionForm from "@/components/tests/question-form";
-import QuestionCard from "@/components/tests/question-card";
+import QuestionCard, { type QuestionType } from "@/components/tests/question-card";
+import BulkImportQuestions from "@/components/tests/bulk-import-questions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, ArrowLeft } from "lucide-react";
+import { Plus, ArrowLeft, Upload } from "lucide-react";
+import type { Test, Question } from "@shared/schema";
+
+type TestWithQuestions = Test & { questions?: Question[] };
 
 export default function EditTest() {
   const { useRequireAuth } = useAuth();
@@ -18,10 +22,11 @@ export default function EditTest() {
   const [, setLocation] = useLocation();
   const [isRoute, params] = useRoute("/tests/:id/edit");
   const [isAddingQuestion, setIsAddingQuestion] = useState(false);
+  const [isBulkImporting, setIsBulkImporting] = useState(false);
   
   const testId = isRoute ? parseInt(params.id) : 0;
   
-  const { data: test, isLoading, error } = useQuery({
+  const { data: test, isLoading, error } = useQuery<TestWithQuestions>({
     queryKey: [`/api/tests/${testId}`],
     enabled: !!user && !!testId,
   });
@@ -112,11 +117,11 @@ export default function EditTest() {
                       <CardContent className="pt-6">
                         <TestForm 
                           defaultValues={{
-                            title: test?.title,
-                            description: test?.description,
-                            duration: test?.duration,
-                            passingScore: test?.passingScore,
-                            shuffleQuestions: test?.shuffleQuestions,
+                            title: test?.title ?? "",
+                            description: test?.description ?? undefined,
+                            duration: test?.duration ?? 60,
+                            passingScore: test?.passingScore ?? 70,
+                            shuffleQuestions: test?.shuffleQuestions ?? false,
                           }} 
                           testId={testId} 
                         />
@@ -128,31 +133,41 @@ export default function EditTest() {
                     <Card>
                       <CardHeader className="flex flex-row items-center justify-between pb-2">
                         <CardTitle className="text-lg font-medium">Questions</CardTitle>
-                        <Button 
-                          onClick={() => setIsAddingQuestion(true)}
-                          disabled={isAddingQuestion}
-                        >
-                          <Plus className="h-4 w-4 mr-1.5" />
-                          Add Question
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            onClick={() => setIsBulkImporting(true)}
+                            disabled={isBulkImporting || isAddingQuestion}
+                          >
+                            <Upload className="h-4 w-4 mr-1.5" />
+                            Import JSON
+                          </Button>
+                          <Button
+                            onClick={() => setIsAddingQuestion(true)}
+                            disabled={isAddingQuestion || isBulkImporting}
+                          >
+                            <Plus className="h-4 w-4 mr-1.5" />
+                            Add Question
+                          </Button>
+                        </div>
                       </CardHeader>
                       <CardContent>
-                        {test?.questions?.length > 0 ? (
+                        {(test?.questions?.length ?? 0) > 0 ? (
                           <div className="space-y-4">
-                            {test.questions.map((question: any) => (
+                            {test?.questions?.map((question) => (
                               <QuestionCard
                                 key={question.id}
                                 id={question.id}
                                 testId={testId}
-                                type={question.type}
+                                type={question.type as QuestionType}
                                 content={question.content}
-                                codeSnippet={question.codeSnippet}
-                                options={question.options}
-                                answer={question.answer}
-                                testCases={question.testCases}
-                                evaluationGuidelines={question.evaluationGuidelines}
-                                points={question.points}
-                                order={question.order}
+                                codeSnippet={question.codeSnippet ?? undefined}
+                                options={question.options as string[]}
+                                answer={question.answer ?? undefined}
+                                testCases={question.testCases as any}
+                                evaluationGuidelines={question.evaluationGuidelines ?? undefined}
+                                points={question.points ?? 0}
+                                order={question.order ?? 0}
                               />
                             ))}
                           </div>
@@ -179,6 +194,12 @@ export default function EditTest() {
                   <QuestionForm
                     testId={testId}
                     onClose={() => setIsAddingQuestion(false)}
+                  />
+                )}
+                {isBulkImporting && (
+                  <BulkImportQuestions
+                    testId={testId}
+                    onClose={() => setIsBulkImporting(false)}
                   />
                 )}
               </>
