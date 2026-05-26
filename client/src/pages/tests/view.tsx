@@ -449,6 +449,7 @@ export default function ViewTest() {
                                 <TableHead>Name</TableHead>
                                 <TableHead>Email</TableHead>
                                 <TableHead>Phone</TableHead>
+                                <TableHead>IP Address</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead>Invited</TableHead>
                                 <TableHead>Score</TableHead>
@@ -461,6 +462,7 @@ export default function ViewTest() {
                                   <TableCell>{candidate.name}</TableCell>
                                   <TableCell>{candidate.email}</TableCell>
                                   <TableCell>{candidate.phone || "-"}</TableCell>
+                                  <TableCell>{candidate.ipAddress ?? candidate.ip_address ?? "-"}</TableCell>
                                   <TableCell>
                                     <Badge
                                       variant={

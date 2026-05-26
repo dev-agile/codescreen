@@ -24,7 +24,15 @@ export default defineConfig({
       '^/api/.*': {
         target: 'http://127.0.0.1:5001',
         changeOrigin: true,
-        rewrite: (path) => path
+        rewrite: (path) => path,
+        configure: (proxy) => {
+          proxy.on("proxyReq", (proxyReq, req) => {
+            const clientIp = req.socket?.remoteAddress?.replace(/^::ffff:/, "");
+            if (clientIp) {
+              proxyReq.setHeader("X-Forwarded-For", clientIp);
+            }
+          });
+        },
       }
     }
   },

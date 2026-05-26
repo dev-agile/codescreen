@@ -5,6 +5,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import { storage } from "./storage";
 
 const app = express();
+app.set("trust proxy", true);
 
 // Add CORS headers
 app.use((req, res, next) => {

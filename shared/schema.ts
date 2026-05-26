@@ -51,6 +51,7 @@ export const candidates = pgTable("candidates", {
   completedAt: timestamp("completed_at"),
   score: integer("score"),
   autoSubmitted: boolean("auto_submitted").default(false),
+  ipAddress: text("ip_address"),
 });
 
 export const responses = pgTable("responses", {
@@ -106,6 +107,7 @@ export const insertCandidateSchema = createInsertSchema(candidates).pick({
   completedAt: true,
   score: true,
   autoSubmitted: true,
+  ipAddress: true,
 });
 
 export const insertResponseSchema = createInsertSchema(responses).pick({

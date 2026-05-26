@@ -16,6 +16,7 @@ import jwt from "jsonwebtoken";
 import cors from 'cors';
 import { sendTestInvitation } from "./email-service";
 import { ParsedQs } from 'qs';
+import { getClientIp } from "./utils/get-client-ip";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-jwt-secret";
 
@@ -711,7 +712,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Start the test
     const updatedCandidate = await storage.updateCandidate(candidate.id, {
       status: "in_progress",
-      startedAt: new Date()
+      startedAt: new Date(),
+      ipAddress: getClientIp(req),
     });
     
     res.json({
@@ -745,7 +747,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         testId,
         testLink: nanoid(10),
         status: "pending",
-        invitedBy: test.createdBy // Link to test creator
+        invitedBy: test.createdBy, // Link to test creator
+        ipAddress: getClientIp(req),
       };
 
       const candidate = await storage.createCandidate(candidateData);
