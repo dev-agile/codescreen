@@ -94,10 +94,17 @@ export default function TestsIndex() {
     return null;
   }
   
-  // Filter tests based on search query
-  const filteredTests = tests?.filter((test) =>
-    test.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredTests = tests
+    ? [...tests]
+        .filter((test) =>
+          test.title.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+        .sort(
+          (a, b) =>
+            new Date(b.createdAt ?? 0).getTime() -
+            new Date(a.createdAt ?? 0).getTime()
+        )
+    : undefined;
   
   return (
     <div className="min-h-screen flex">
