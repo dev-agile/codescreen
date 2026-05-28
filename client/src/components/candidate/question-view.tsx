@@ -350,22 +350,23 @@ export function QuestionView({
         )}
       </CardContent>
       
-      <CardFooter className="px-4 py-4 sm:px-6 bg-gray-50 flex justify-between items-center border-t border-gray-200">
+      <CardFooter className="px-4 py-4 sm:px-6 bg-gray-50 border-t border-gray-200 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Button
           type="button"
           onClick={onPrevious}
           disabled={questionNumber === 1}
           variant="outline"
+          className="w-full sm:w-auto"
         >
           <ChevronLeft className="mr-1.5 h-4 w-4" />
           Previous
         </Button>
         
-        <div className="flex items-center">
-          <span className="text-xs text-gray-500 mr-2">
+        <div className="flex w-full flex-wrap items-center justify-center gap-2 text-center sm:w-auto sm:justify-start sm:text-left">
+          <span className="text-xs text-gray-500">
             {lastSaved ? `Last saved at ${lastSaved.toLocaleTimeString()}` : 'Your work is automatically saved'}
           </span>
-          <Badge variant={isSaving ? "outline" : "success"} className="text-xs">
+          <Badge variant={isSaving ? "outline" : "success"} className="text-xs shrink-0">
             {isSaving ? (
               <>
                 <Save className="h-3 w-3 mr-1 animate-pulse" />
@@ -384,7 +385,7 @@ export function QuestionView({
           <Button
             type="button"
             onClick={onSubmit}
-            className="bg-green-600 hover:bg-green-700"
+            className="w-full sm:w-auto bg-green-600 hover:bg-green-700"
           >
             Submit Test
           </Button>
@@ -392,6 +393,7 @@ export function QuestionView({
           <Button
             type="button"
             onClick={onNext}
+            className="w-full sm:w-auto"
           >
             Next
             <ChevronRight className="ml-1.5 h-4 w-4" />

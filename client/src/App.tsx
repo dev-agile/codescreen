@@ -1,4 +1,5 @@
 import { Switch, Route } from "wouter";
+import { useEffect, useState } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -45,12 +46,40 @@ function Router() {
 }
 
 function App() {
+  const [isMobileBlocked, setIsMobileBlocked] = useState(false);
+
+  useEffect(() => {
+    const checkBlockedDevice = () => {
+      const isMobileOrTabletUA =
+        /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent);
+      const isSmallScreen = window.matchMedia("(max-width: 1024px)").matches;
+
+      setIsMobileBlocked(isMobileOrTabletUA || isSmallScreen);
+    };
+
+    checkBlockedDevice();
+    window.addEventListener("resize", checkBlockedDevice);
+    return () => window.removeEventListener("resize", checkBlockedDevice);
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="light">
         <TooltipProvider>
           <Toaster />
-          <Router />
+          {isMobileBlocked ? (
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black px-6 text-center">
+              <div className="max-w-md rounded-xl border border-gray-700 bg-gray-900 p-6 shadow-2xl">
+                <h1 className="text-xl font-semibold text-white">Desktop / Laptop Required</h1>
+                <p className="mt-3 text-sm leading-relaxed text-gray-300">
+                  This platform is not available on phone or iPad/tablet. Please open this link on a laptop or desktop
+                  screen to continue.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <Router />
+          )}
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>
